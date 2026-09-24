@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StarDict2Mac</title>
+<style>
+:root{
+  --bg:#f5f5f7; --card:#ffffff; --text:#1d1d1f; --muted:#6e6e73; --line:#e3e3e8;
+  --accent:#0a66d8; --accent-2:#e8f0fd; --ok:#1f8a3b; --ok-bg:#e9f6ec; --err:#c4302b; --err-bg:#fdecea;
+  --warn:#8a5a00; --warn-bg:#fff5e0; --field:#fbfbfd; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#161618; --card:#222225; --text:#f2f2f4; --muted:#9a9aa2; --line:#34343a;
+    --accent:#4c9bff; --accent-2:#1d2a3d; --ok:#56c26e; --ok-bg:#16301d; --err:#ff6b61; --err-bg:#3a1a18;
+    --warn:#f0b64a; --warn-bg:#3a2d12; --field:#1b1b1e; --shadow:none;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.45 -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang TC", "Apple SD Gothic Neo", sans-serif}
+.wrap{max-width:920px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+header .logo{width:44px;height:44px;flex:none}
+header h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+header .sp{flex:1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card h2 .n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent-2);color:var(--accent);font-size:11.5px}
+.card.disabled{opacity:.5;pointer-events:none}
+button{font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--text);padding:7px 14px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{filter:brightness(1.06)}
+button.big{padding:11px 22px;font-size:15px}
+button.ghost{background:transparent}
+button:disabled{opacity:.45;cursor:default}
+input[type=text],select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--text);width:100%}
+input[type=text]:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pick{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pick .or{color:var(--muted);font-size:13px}
+.pathrow{display:flex;gap:8px;margin-top:12px}
+.pathrow input{flex:1;font-family:var(--mono);font-size:12.5px}
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.info .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.info .v{font-size:17px;font-weight:600;margin-top:2px;word-break:break-word}
+.info .wide{grid-column:1/-1}
+.info .v.small{font-size:13px;font-weight:400;font-family:var(--mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+label.f{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px}
+.checks{display:flex;flex-direction:column;gap:8px}
+.checks label{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer}
+.checks input{margin-top:3px}
+.checks small{display:block;color:var(--muted);font-size:12.5px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg label{flex:1;text-align:center;padding:7px 8px;cursor:pointer;font-size:13.5px;border-right:1px solid var(--line)}
+.seg label:last-child{border-right:none}
+.seg input{display:none}
+.seg input:checked+span{color:var(--accent);font-weight:600}
+.seg label:has(input:checked){background:var(--accent-2)}
+.note{font-size:12.5px;color:var(--muted);margin-top:6px}
+.banner{border-radius:10px;padding:10px 14px;font-size:13.5px;margin-top:12px}
+.banner.err{background:var(--err-bg);color:var(--err)}
+.banner.warn{background:var(--warn-bg);color:var(--warn)}
+.banner.ok{background:var(--ok-bg);color:var(--ok)}
+.pv-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.pv-bar input{flex:1;min-width:180px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:var(--field);cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+iframe{width:100%;height:380px;border:1px solid var(--line);border-radius:10px;background:#fff}
+@media (prefers-color-scheme: dark){iframe{background:#1e1e1e}}
+.progress{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:14px 0 8px}
+.progress>div{height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .4s ease}
+.progress.done>div{background:var(--ok)}
+.progress.err>div{background:var(--err)}
+.status{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);gap:10px}
+.status b{color:var(--text);font-weight:600}
+details{margin-top:12px}
+summary{cursor:pointer;font-size:13px;color:var(--muted)}
+pre.log{font-family:var(--mono);font-size:11.5px;line-height:1.5;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:10px 12px;max-height:260px;overflow:auto;white-space:pre-wrap;margin:8px 0 0}
+.hide{display:none!important}
+.done-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.steps{margin:10px 0 0 18px;padding:0;font-size:13.5px}
+.steps li{margin:3px 0}
+.kit{border:1px solid var(--accent);background:var(--accent-2);border-radius:14px;padding:16px 20px;margin-bottom:16px}
+.kit h3{margin:0 0 6px;font-size:15.5px}
+.kit p{margin:0 0 12px;font-size:13.5px}
+.kit .small{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.kit a{color:var(--accent)}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
+@media (max-width:640px){.grid{grid-template-columns:1fr}.info{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+    <rect x="4" y="4" width="40" height="40" rx="10" fill="#8B2E2E"/>
+    <path d="M14 13h13a7 7 0 0 1 7 7v15H21a7 7 0 0 1-7-7z" fill="#F6EFE3"/>
+    <path d="M18 19h11M18 23.5h11M18 28h8" stroke="#8B2E2E" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="34" cy="34" r="6.5" fill="#F6C343" stroke="#8B2E2E" stroke-width="1.5"/>
+    <path d="M31.2 34l2 2 3.6-3.8" stroke="#8B2E2E" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div>
+    <h1>StarDict2Mac</h1>
+    <p>Turn StarDict dictionaries into dictionaries for macOS Dictionary.app and Look Up.</p>
+  </div>
+  <div class="sp"></div>
+  <button class="ghost" id="quitBtn" title="Quit StarDict2Mac">Quit</button>
+</header>
+
+<div id="globalBanner"></div>
+<section class="kit hide" id="kitCard">
+  <h3>One-time setup: Apple's Dictionary Development Kit</h3>
+  <p>StarDict2Mac uses Apple's free Dictionary Development Kit for the final build step. Apple's terms don't allow including it in other apps, so it's set up once, separately:</p>
+  <div class="row">
+    <button class="primary" id="kitDownload">Download it now (about 2 MB)</button>
+    <button id="kitChoose">I installed it from Apple — choose folder…</button>
+  </div>
+  <div id="kitMsg"></div>
+  <p class="small">The download comes from a <a id="kitMirrorLink" href="#" target="_blank" rel="noopener">public copy</a> of the kit in Apple's “Additional Tools for Xcode 14.1”; every file is checked against a known fingerprint before it is used.
+  Prefer Apple's own download? Get <a id="kitAppleLink" href="#" target="_blank" rel="noopener">Additional Tools for Xcode</a> (free Apple ID), open it, and choose its <i>Utilities › Dictionary Development Kit</i> folder.</p>
+</section>
+
+<section class="card" id="srcCard">
+  <h2><span class="n">1</span>StarDict dictionary</h2>
+  <div class="pick">
+    <button class="primary" id="pickFile">Choose .ifo file or archive…</button>
+    <button id="pickFolder">Choose folder…</button>
+    <span class="or">or paste a path below</span>
+  </div>
+  <div class="pathrow">
+    <input type="text" id="pathInput" placeholder="/Users/you/Dictionaries/stardict-xxx/xxx.ifo" spellcheck="false">
+    <button id="loadBtn">Load</button>
+  </div>
+  <div id="srcMsg"></div>
+  <div class="info hide" id="info">
+    <div class="wide"><div class="k">Title</div><div class="v" id="iTitle"></div></div>
+    <div><div class="k">Entries</div><div class="v" id="iEntries"></div></div>
+    <div><div class="k">Synonyms</div><div class="v" id="iSyn"></div></div>
+    <div><div class="k">Content type</div><div class="v" id="iType"></div></div>
+    <div><div class="k">Script</div><div class="v" id="iLang"></div></div>
+    <div class="wide"><div class="k">File</div><div class="v small" id="iPath"></div></div>
+  </div>
+</section>
+
+<section class="card disabled" id="optCard">
+  <h2><span class="n">2</span>Settings</h2>
+  <div class="grid">
+    <div>
+      <label class="f" for="oName">Name shown in Dictionary.app</label>
+      <input type="text" id="oName">
+    </div>
+    <div>
+      <label class="f" for="oFile">Bundle file name</label>
+      <input type="text" id="oFile" spellcheck="false">
+      <div class="note">Saved as <span id="oFileOut"></span></div>
+    </div>
+    <div>
+      <label class="f" for="oFont">Font</label>
+      <select id="oFont">
+        <option value="default">Same as other dictionaries (recommended)</option>
+        <option value="system">Sans-serif (San Francisco / PingFang)</option>
+        <option value="serif">Serif (Palatino / Songti)</option>
+        <option value="songti-tc">Songti TC 宋體</option>
+        <option value="songti-sc">Songti SC 宋体</option>
+        <option value="kaiti">Kaiti 楷體</option>
+        <option value="pingfang">PingFang 蘋方</option>
+        <option value="mincho">Hiragino Mincho 明朝</option>
+        <option value="custom">Other font…</option>
+      </select>
+      <input type="text" id="oFontCustom" class="hide" placeholder="Exact font name, e.g. Source Han Serif TC" style="margin-top:6px">
+    </div>
+    <div>
+      <label class="f" for="oSize">Text size: <span id="oSizeVal">100%</span></label>
+      <input type="range" id="oSize" min="80" max="150" step="5" value="100" style="width:100%">
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="oHead" checked><span>Show the headword as a title<small>Adds a large heading above each entry.</small></span></label>
+      <label><input type="checkbox" id="oLinks" checked><span>Link cross-references<small>Turns “see also” words into clickable links to their entries.</small></span></label>
+      <label><input type="checkbox" id="oSyn" checked><span>Make synonyms searchable<small>Uses the .syn file (e.g. simplified forms of traditional headwords).</small></span></label>
+    </div>
+    <div>
+      <label class="f">When finished</label>
+      <div class="seg">
+        <label><input type="radio" name="dest" value="install" checked><span>Install into Dictionary.app</span></label>
+        <label><input type="radio" name="dest" value="save"><span>Save next to the source</span></label>
+      </div>
+      <div class="note" id="destNote"></div>
+    </div>
+  </div>
+  <div id="replaceWarn"></div>
+</section>
+
+<section class="card disabled" id="pvCard">
+  <h2><span class="n">3</span>Preview</h2>
+  <div class="pv-bar">
+    <input type="text" id="pvWord" placeholder="Look up a headword…">
+    <button id="pvGo">Show</button>
+    <div class="chips" id="pvChips"></div>
+  </div>
+  <iframe id="pvFrame" title="Entry preview" sandbox="allow-scripts"></iframe>
+  <div class="note" id="pvNote">This is how entries will look (Dictionary.app uses the same styles).</div>
+</section>
+
+<section class="card disabled" id="buildCard">
+  <h2><span class="n">4</span>Convert</h2>
+  <div class="row">
+    <button class="primary big" id="buildBtn">Convert</button>
+    <button id="cancelBtn" class="hide">Cancel</button>
+    <span class="note" id="buildHint">Large dictionaries can take several minutes — Apple's build tool does most of the work. You can leave this page; you'll get a notification when it's done.</span>
+  </div>
+  <div id="progressBox" class="hide">
+    <div class="progress" id="bar"><div></div></div>
+    <div class="status"><span id="phase"><b>Starting…</b></span><span id="elapsed"></span></div>
+    <div id="doneBox"></div>
+    <details id="logDetails">
+      <summary>Log</summary>
+      <pre class="log" id="log"></pre>
+    </details>
+  </div>
+</section>
+
+<footer>StarDict2Mac <span id="ver"></span> · <span id="kitFoot">Apple Dictionary Development Kit: not set up</span> · Runs only on this Mac (127.0.0.1)</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let loaded = null, polling = null, logNext = 0, lastState = null;
+
+async function api(path, body){
+  const opt = body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json','X-SD2M':'1'}, body:JSON.stringify(body)};
+  const r = await fetch(path, opt);
+  const j = await r.json().catch(()=>({error:'Bad response'}));
+  if(!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function banner(el, kind, html){ el.innerHTML = html ? `<div class="banner ${kind}">${html}</div>` : ''; }
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtN(n){ return Number(n).toLocaleString(); }
+function fmtT(s){ s=Math.round(s); const m=Math.floor(s/60), r=s%60; return m? `${m} min ${r} s` : `${r} s`; }
+const TYPE_NAMES = {m:'Plain text',l:'Plain text',g:'Pango markup',h:'HTML',x:'XDXF',t:'Phonetic',y:'Reading',k:'KingSoft',w:'MediaWiki',n:'WordNet',r:'Resources',W:'Sound',P:'Picture'};
+
+// ---------------------------------------------------------------- source
+$('pickFile').onclick = () => pick('file');
+$('pickFolder').onclick = () => pick('folder');
+$('loadBtn').onclick = () => load($('pathInput').value);
+$('pathInput').addEventListener('keydown', e => { if(e.key==='Enter') load($('pathInput').value); });
+
+async function pick(kind){
+  try{
+    const r = await api('/api/pick', {kind});
+    if(r.cancelled) return;
+    $('pathInput').value = r.path;
+    load(r.path);
+  }catch(e){ banner($('srcMsg'),'err',esc(e.message)); }
+}
+
+async function load(path){
+  path = (path||'').trim();
+  if(!path) return;
+  banner($('srcMsg'),'warn','Reading dictionary…');
+  try{
+    const r = await api('/api/inspect', {path});
+    loaded = r;
+    banner($('srcMsg'),'','');
+    $('info').classList.remove('hide');
+    $('iTitle').textContent = r.bookname;
+    $('iEntries').textContent = fmtN(r.entries);
+    $('iSyn').textContent = r.synonyms ? fmtN(r.synonyms) : '—';
+    $('iType').textContent = [...(r.types||'')].map(t=>TYPE_NAMES[t]||t).join(' + ') || '—';
+    $('iLang').textContent = {'zh-Hant':'Traditional Chinese','zh-Hans':'Simplified Chinese','ja':'Japanese','ko':'Korean'}[r.lang] || 'Latin / other';
+    $('iPath').textContent = r.ifo;
+    const d = r.defaults;
+    $('oName').value = d.Name; $('oFile').value = d.FileName;
+    $('oFont').value = d.Font; $('oSize').value = d.FontSize; $('oSizeVal').textContent = d.FontSize+'%';
+    $('oHead').checked = d.ShowHeadword; $('oLinks').checked = d.LinkXrefs; $('oSyn').checked = d.UseSynonyms;
+    $('oSyn').disabled = !r.synonyms;
+    for(const c of ['optCard','pvCard','buildCard']) $(c).classList.remove('disabled');
+    $('pvChips').innerHTML = (r.samples||[]).map(w=>`<span class="chip">${esc(w)}</span>`).join('');
+    updateDest();
+    preview('');
+  }catch(e){ banner($('srcMsg'),'err',esc(e.message)); }
+}
+
+// ---------------------------------------------------------------- options
+function opts(){
+  let font = $('oFont').value;
+  if(font==='custom') font = $('oFontCustom').value.trim() || 'system';
+  return {
+    name: $('oName').value.trim(), fileName: $('oFile').value.trim(), font,
+    fontSize: +$('oSize').value, showHeadword: $('oHead').checked, linkXrefs: $('oLinks').checked,
+    useSynonyms: $('oSyn').checked, install: document.querySelector('input[name=dest]:checked').value==='install'
+  };
+}
+function updateDest(){
+  const o = opts();
+  const file = (o.fileName || 'Dictionary') + '.dictionary';
+  $('oFileOut').textContent = file;
+  if(o.install){
+    $('destNote').textContent = 'Copied to ~/Library/Dictionaries. Then enable it in Dictionary → Settings.';
+    banner($('replaceWarn'),'warn', loaded && loaded.installed && o.fileName===loaded.defaults.FileName
+      ? `A dictionary named <b>${esc(file)}</b> is already installed and will be replaced.` : '');
+  } else {
+    $('destNote').textContent = 'Saved in the folder that contains the StarDict folder.';
+    banner($('replaceWarn'),'','');
+  }
+}
+let pvTimer=null;
+function schedulePreview(){ clearTimeout(pvTimer); pvTimer=setTimeout(()=>preview(currentWord),250); }
+for(const id of ['oName','oFile','oFontCustom']) $(id).addEventListener('input', ()=>{updateDest(); if(id==='oFontCustom') schedulePreview();});
+for(const id of ['oHead','oLinks','oSyn']) $(id).addEventListener('change', ()=>{updateDest(); schedulePreview();});
+$('oFont').addEventListener('change', ()=>{ $('oFontCustom').classList.toggle('hide', $('oFont').value!=='custom'); schedulePreview(); });
+$('oSize').addEventListener('input', ()=>{ $('oSizeVal').textContent = $('oSize').value+'%'; schedulePreview(); });
+document.querySelectorAll('input[name=dest]').forEach(r=>r.addEventListener('change', updateDest));
+
+// ---------------------------------------------------------------- preview
+let currentWord = '';
+$('pvGo').onclick = () => preview($('pvWord').value);
+$('pvWord').addEventListener('keydown', e => { if(e.key==='Enter') preview($('pvWord').value); });
+$('pvChips').addEventListener('click', e => { const c=e.target.closest('.chip'); if(c){ $('pvWord').value=c.textContent; preview(c.textContent);} });
+async function preview(word){
+  if(!loaded) return;
+  try{
+    const r = await api('/api/preview', {...opts(), word});
+    if(!r.found){ $('pvNote').textContent = `No entry found for “${word}”.`; return; }
+    currentWord = r.word;
+    $('pvFrame').srcdoc = r.html;
+    $('pvNote').textContent = r.matches && r.matches.length > 1
+      ? 'Also starting with “'+word+'”: ' + r.matches.slice(1).join('、')
+      : 'This is how entries will look (Dictionary.app uses the same styles). Links are clickable.';
+  }catch(e){ $('pvNote').textContent = e.message; }
+}
+window.addEventListener('message', async e => {
+  const h = e.data && e.data.sd2mLink; if(!h) return;
+  let m;
+  if((m = h.match(/^x-dictionary:r:([^:]+)/))){
+    const r = await api('/api/open', {what:'entry', id:m[1]}).catch(()=>null);
+    if(r && r.word){ $('pvWord').value = r.word; preview(r.word); }
+  } else if((m = h.match(/^x-dictionary:d:(.*)$/))){
+    $('pvWord').value = decodeURIComponent(m[1]); preview($('pvWord').value);
+  }
+});
+
+// ---------------------------------------------------------------- build
+$('buildBtn').onclick = async () => {
+  if(!loaded) return;
+  if(!kitReady){ $('kitCard').scrollIntoView({behavior:'smooth'}); banner($('kitMsg'),'warn','Set this up first, then click Convert again.'); return; }
+  try{
+    await api('/api/build', {...opts(), path: loaded.ifo});
+    logNext = 0; $('log').textContent = '';
+    startPolling();
+  }catch(e){ alertBanner(e.message); }
+};
+$('cancelBtn').onclick = () => api('/api/cancel', {});
+$('quitBtn').onclick = async () => {
+  if(lastState==='running' && !confirm('A conversion is running. Quit and cancel it?')) return;
+  await api('/api/quit', {}).catch(()=>{});
+  document.body.innerHTML = '<div class="wrap"><div class="card" style="margin-top:40px"><h2>StarDict2Mac has quit</h2><p>You can close this tab. Open the app again to convert another dictionary.</p></div></div>';
+};
+let kitReady = false;
+function showKit(k, st){
+  kitReady = !!(k && k.found);
+  $('kitCard').classList.toggle('hide', kitReady);
+  const src = {env:'from STARDICT2MAC_DDK', chosen:'your folder', installed:'installed from Apple', downloaded:'downloaded'}[k && k.source] || '';
+  $('kitFoot').textContent = kitReady ? `Apple Dictionary Development Kit: ready (${src})` : 'Apple Dictionary Development Kit: not set up';
+  $('kitFoot').title = kitReady ? k.path : '';
+  if(st){ $('kitMirrorLink').href = st.kitMirror; $('kitAppleLink').href = st.kitApple; }
+  if(k && !k.found && k.error) banner($('kitMsg'),'err',esc(k.error));
+  $('buildBtn').title = kitReady ? '' : 'Set up Apple\'s Dictionary Development Kit first (see the top of the page)';
+}
+$('kitDownload').onclick = async () => {
+  const b = $('kitDownload'); b.disabled = true; b.textContent = 'Downloading…';
+  banner($('kitMsg'),'','');
+  try{ showKit(await api('/api/kit/download', {})); banner($('globalBanner'),'ok','Apple\'s Dictionary Development Kit is ready.'); setTimeout(()=>banner($('globalBanner'),'',''),4000); }
+  catch(e){ banner($('kitMsg'),'err',esc(e.message)+' — check your internet connection and try again, or use Apple\'s download.'); }
+  b.disabled = false; b.textContent = 'Download it now (about 2 MB)';
+};
+$('kitChoose').onclick = async () => {
+  banner($('kitMsg'),'','');
+  try{ const r = await api('/api/kit/choose', {}); if(!r.cancelled) showKit(r); }
+  catch(e){ banner($('kitMsg'),'err',esc(e.message)); }
+};
+function alertBanner(msg){ banner($('globalBanner'),'err',esc(msg)); }
+
+function startPolling(){ if(!polling){ polling = setInterval(poll, 700); } poll(); }
+async function poll(){
+  let s;
+  try{ s = await api('/api/job?since='+logNext); }catch(e){ return; }
+  if(s.none) return;
+  showJob(s);
+  if(s.state !== 'running'){ clearInterval(polling); polling = null; }
+}
+function showJob(s){
+  lastState = s.state;
+  $('progressBox').classList.remove('hide');
+  $('buildCard').classList.remove('disabled');
+  const running = s.state==='running';
+  $('buildBtn').disabled = running;
+  $('buildBtn').textContent = running ? 'Converting…' : 'Convert again';
+  $('cancelBtn').classList.toggle('hide', !running);
+  $('buildHint').classList.toggle('hide', !running && s.state!=='none');
+  const bar = $('bar');
+  bar.firstElementChild.style.width = Math.max(1, s.percent).toFixed(1)+'%';
+  bar.classList.toggle('done', s.state==='done');
+  bar.classList.toggle('err', s.state==='error' || s.state==='cancelled');
+  $('phase').innerHTML = `<b>${esc(s.name)}</b> — ${esc(s.phase)} (${Math.floor(s.percent)}%)`;
+  $('elapsed').textContent = fmtT(s.elapsed);
+  if(s.log && s.log.length){
+    const pre = $('log'); const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 8;
+    pre.textContent += s.log.join('\n') + '\n';
+    if(atEnd) pre.scrollTop = pre.scrollHeight;
+  }
+  logNext = s.logNext;
+  if(s.state==='done'){
+    $('phase').innerHTML = `<b>${esc(s.name)}</b> — finished`;
+    const actions = s.installed
+      ? `<button class="primary" id="openDict">Open Dictionary</button><button id="revealBtn">Show in Finder</button>`
+      : `<button class="primary" id="revealBtn">Show in Finder</button>`;
+    const steps = s.installed
+      ? `<ol class="steps"><li>Click <b>Open Dictionary</b> (it restarts Dictionary.app so it sees the new dictionary).</li>
+         <li>In Dictionary, choose <b>Dictionary → Settings…</b> and tick <b>${esc(s.name)}</b>. Drag it up to change its order.</li>
+         <li>Look words up anywhere with Force Click, three-finger tap, or ⌃⌘D.</li></ol>`
+      : `<ol class="steps"><li>Double-click the .dictionary file or copy it to <code>~/Library/Dictionaries</code> to install it.</li></ol>`;
+    $('doneBox').innerHTML = `<div class="banner ok">Done in ${fmtT(s.elapsed)}. ${s.installed?'Installed as':'Saved as'} <code>${esc(s.result)}</code></div>${steps}<div class="done-actions">${actions}</div>`;
+    const od = $('openDict'); if(od) od.onclick = () => api('/api/open',{what:'dictionary'});
+    $('revealBtn').onclick = () => api('/api/open',{what:'reveal', path:s.result});
+  } else if(s.state==='error'){
+    $('doneBox').innerHTML = `<div class="banner err">${esc(s.error)}</div>`;
+    $('logDetails').open = true;
+  } else if(s.state==='cancelled'){
+    $('doneBox').innerHTML = `<div class="banner warn">Cancelled.</div>`;
+  } else {
+    $('doneBox').innerHTML = '';
+  }
+}
+
+// ---------------------------------------------------------------- init
+(async function init(){
+  try{
+    const st = await api('/api/state');
+    $('ver').textContent = st.version;
+    showKit(st.kit, st);
+    if(st.toolsError) alertBanner(st.toolsError);
+    if(st.job){
+      if(st.job.state==='running') startPolling(); else { logNext=0; poll(); }
+    }
+  }catch(e){ alertBanner('Cannot reach StarDict2Mac. Is the app still running?'); }
+  // keep-alive so the app knows the window is open
+  setInterval(()=>fetch('/api/state').catch(()=>{}), 60000);
+})();
+</script>
+</body>
+</html>
