@@ -33,6 +33,8 @@ type IfoInfo struct {
 	Date             string
 	SameTypeSequence string
 	DictType         string
+	Copyright        string
+	Format           string // "" for StarDict, "bgl" for Babylon
 	Raw              map[string]string
 }
 
@@ -156,6 +158,9 @@ func readMaybeGzip(path string) ([]byte, error) {
 // OpenStarDict opens the dictionary described by an .ifo path.
 // tmpDir is used to decompress .dict.dz so that entries can be read randomly.
 func OpenStarDict(ifoPath, tmpDir string, progress func(string)) (*StarDict, error) {
+	if isBGL(ifoPath) {
+		return OpenBGL(ifoPath, tmpDir, progress)
+	}
 	info, err := ParseIfo(ifoPath)
 	if err != nil {
 		return nil, err
@@ -357,7 +362,16 @@ func (sd *StarDict) Fields(data []byte) []Field {
 
 func isLowerType(t byte) bool { return t >= 'a' && t <= 'z' }
 
-// FindIfo locates a .ifo file inside a directory (recursively, shallow first).
+// ReadInfo returns the metadata of a StarDict .ifo or a Babylon .bgl file.
+func ReadInfo(path string) (IfoInfo, error) {
+	if isBGL(path) {
+		return ReadBGLInfo(path)
+	}
+	return ParseIfo(path)
+}
+
+// FindIfo locates a .ifo file (or, failing that, a single .bgl file) inside a
+// directory (recursively, shallow first).
 func FindIfo(dir string) (string, error) {
 	var found []string
 	filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
@@ -367,20 +381,34 @@ func FindIfo(dir string) (string, error) {
 		if d.IsDir() && strings.HasPrefix(d.Name(), ".") && p != dir {
 			return filepath.SkipDir
 		}
-		if !d.IsDir() && strings.EqualFold(filepath.Ext(p), ".ifo") {
+		if !d.IsDir() && (strings.EqualFold(filepath.Ext(p), ".ifo") || isBGL(p)) {
 			found = append(found, p)
 		}
 		return nil
 	})
 	if len(found) == 0 {
-		return "", errors.New("no .ifo file found in " + dir)
+		return "", errors.New("no StarDict (.ifo) or Babylon (.bgl) file found in " + dir)
 	}
-	// prefer shallowest
-	best := found[0]
+	// Use the shallowest dictionary; if several sit at that level, ask.
+	depth := func(p string) int { return strings.Count(p, string(os.PathSeparator)) }
+	min := depth(found[0])
 	for _, p := range found[1:] {
-		if strings.Count(p, string(os.PathSeparator)) < strings.Count(best, string(os.PathSeparator)) {
-			best = p
+		if d := depth(p); d < min {
+			min = d
 		}
 	}
-	return best, nil
+	var top []string
+	for _, p := range found {
+		if depth(p) == min {
+			top = append(top, p)
+		}
+	}
+	if len(top) == 1 {
+		return top[0], nil
+	}
+	var names []string
+	for _, p := range top {
+		names = append(names, filepath.Base(p))
+	}
+	return "", fmt.Errorf("this folder contains several dictionaries (%s); choose one of the files instead", strings.Join(names, ", "))
 }

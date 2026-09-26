@@ -39,6 +39,8 @@ type server struct {
 	curPath string
 	curConv *Converter
 	curTmp  string
+
+	inspectSeq int
 }
 
 func runServer() {
@@ -236,10 +238,10 @@ func (s *server) handlePick(r *http.Request, b map[string]any) (any, error) {
 	switch str(b, "kind") {
 	case "folder":
 		p, err = osascript(`tell current application to activate`,
-			`POSIX path of (choose folder with prompt "Choose a folder that contains a StarDict dictionary (.ifo, .idx, .dict)")`)
+			`POSIX path of (choose folder with prompt "Choose a folder that contains a StarDict dictionary (.ifo, .idx, .dict) or one Babylon .bgl file")`)
 	default:
 		p, err = osascript(`tell current application to activate`,
-			`POSIX path of (choose file with prompt "Choose a StarDict .ifo file (or a .tar.gz / .tar.bz2 / .zip archive of one)")`)
+			`POSIX path of (choose file with prompt "Choose a StarDict .ifo file, a Babylon .bgl file, or a .tar.gz / .tar.bz2 / .zip archive")`)
 	}
 	if err != nil {
 		return nil, err
@@ -272,16 +274,33 @@ func (s *server) handleInspect(r *http.Request, b map[string]any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.cleanupPreview()
-	tmp := filepath.Join(cacheDir(), "preview")
-	os.RemoveAll(tmp)
-	os.MkdirAll(tmp, 0755)
+	s.mu.Lock()
+	s.inspectSeq++
+	seq := s.inspectSeq
+	s.mu.Unlock()
+	tmp, err := os.MkdirTemp(filepath.Join(cacheDir()), "preview-")
+	if err != nil {
+		os.MkdirAll(cacheDir(), 0755)
+		if tmp, err = os.MkdirTemp(cacheDir(), "preview-"); err != nil {
+			return nil, err
+		}
+	}
 	sd, err := OpenStarDict(ifo, tmp, nil)
 	if err != nil {
+		os.RemoveAll(tmp)
 		return nil, err
 	}
 	opts := DefaultOptions(sd.Info)
 	opts.Lang = DetectLang(sd)
+	s.mu.Lock()
+	if seq != s.inspectSeq { // a newer choice replaced this one
+		s.mu.Unlock()
+		sd.Close()
+		os.RemoveAll(tmp)
+		return nil, errors.New("superseded")
+	}
+	s.mu.Unlock()
+	s.cleanupPreview()
 	s.mu.Lock()
 	s.cur, s.curPath, s.curTmp = sd, ifo, tmp
 	s.curConv = NewConverter(sd, opts)
@@ -318,6 +337,7 @@ func (s *server) handleInspect(r *http.Request, b map[string]any) (any, error) {
 		"installed":   dirExists(dest),
 		"samples":     samples,
 		"lang":        opts.Lang,
+		"format":      sd.Info.Format,
 	}, nil
 }
 
@@ -351,7 +371,7 @@ func (s *server) handlePreview(r *http.Request, b map[string]any) (any, error) {
 		return nil, errors.New("no dictionary loaded")
 	}
 	opts := optsFromBody(b, conv.opts)
-	c := &Converter{opts: opts, lookup: conv.lookup, hasRes: conv.hasRes}
+	c := &Converter{opts: opts, lookup: conv.lookup, lookupFold: conv.lookupFold, hasRes: conv.hasRes}
 	word := strings.TrimSpace(str(b, "word"))
 	idx := -1
 	var matches []string
@@ -456,7 +476,7 @@ func (s *server) handleBuild(r *http.Request, b map[string]any) (any, error) {
 		return nil, errors.New("choose a dictionary first")
 	}
 	if base.Name == "" {
-		info, err := ParseIfo(path)
+		info, err := ReadInfo(path)
 		if err != nil {
 			return nil, err
 		}

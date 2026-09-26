@@ -1,11 +1,12 @@
 # StarDict2Mac
 
-A small macOS app that converts **StarDict** dictionaries into dictionaries for
+A small macOS app that converts **StarDict** and **Babylon** (`.bgl`) dictionaries into dictionaries for
 **Dictionary.app** and system-wide **Look Up** (Force Click, three-finger tap, ⌃⌘D).
 
 - Double-click app with a simple window: pick a dictionary, preview entries, convert, install.
 - Handles plain text, Pango markup, HTML, XDXF, phonetics, `res/` images, `.syn` synonyms,
   64-bit indexes, and `.tar.gz` / `.tar.bz2` / `.zip` archives.
+- Reads Babylon `.bgl` glossaries too, including legacy Windows code pages (Big5, GBK, Shift-JIS, EUC-KR, …).
 - Cross-references become links; CJK dictionaries get the right system serif.
 - Universal binary (Apple Silicon + Intel), macOS 11+. No Xcode, Python or Homebrew.
 
@@ -13,7 +14,7 @@ User instructions are in [`packaging/README.txt`](packaging/README.txt) (shipped
 
 ## How it works
 
-1. **Read** the StarDict files (`stardict.go`).
+1. **Read** the StarDict files (`stardict.go`) or Babylon glossary (`bgl.go`).
 2. **Convert** each entry to well-formed XHTML (`markup.go`, using a vendored copy of
    `golang.org/x/net/html` for tolerant parsing) and write Apple's Dictionary
    Development Kit sources — XML, CSS, Info.plist (`appledict.go`).
@@ -55,7 +56,7 @@ To ship without Gatekeeper warnings you need an Apple Developer ID. See
 ```sh
 StarDict2Mac                          # open the window
 StarDict2Mac setup-kit [folder]       # download or locate Apple's kit
-StarDict2Mac convert [options] <path> # .ifo, folder or archive
+StarDict2Mac convert [options] <path> # .ifo, .bgl, folder or archive
 StarDict2Mac sources [options] <path> <outdir>   # only write the DDK sources
 ```
 

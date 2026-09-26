@@ -27,9 +27,10 @@ type Options struct {
 }
 
 type Converter struct {
-	opts   Options
-	lookup map[string]int // headword/synonym -> entry index
-	hasRes bool
+	opts       Options
+	lookup     map[string]int // headword/synonym -> entry index
+	lookupFold map[string]int // same, lower-cased
+	hasRes     bool
 }
 
 // ---------------------------------------------------------------- escaping
@@ -285,15 +286,23 @@ func (c *Converter) resolve(word string) (int, bool) {
 	if c.lookup == nil {
 		return 0, false
 	}
-	w := strings.TrimSpace(word)
-	if i, ok := c.lookup[w]; ok {
-		return i, true
+	w := strings.TrimSpace(tagRE.ReplaceAllString(word, ""))
+	for _, cand := range []string{w, xrefPunct.Replace(w), w + ".", strings.TrimSuffix(w, ".")} {
+		if i, ok := c.lookup[cand]; ok {
+			return i, true
+		}
 	}
-	if i, ok := c.lookup[xrefPunct.Replace(w)]; ok {
-		return i, true
+	if c.lookupFold != nil {
+		for _, cand := range []string{w, w + ".", strings.TrimSuffix(w, ".")} {
+			if i, ok := c.lookupFold[strings.ToLower(cand)]; ok {
+				return i, true
+			}
+		}
 	}
 	return 0, false
 }
+
+var tagRE = regexp.MustCompile(`<[^>]*>`)
 
 func (c *Converter) linkHref(word string) (string, bool) {
 	if i, ok := c.resolve(word); ok {

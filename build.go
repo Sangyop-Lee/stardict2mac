@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const AppVersion = "1.1.0"
+const AppVersion = "1.2.0"
 
 // ------------------------------------------------------------------ paths
 
@@ -88,7 +88,7 @@ func ResolveSource(p, extractRoot string) (string, error) {
 	if st.IsDir() {
 		return FindIfo(p)
 	}
-	if strings.EqualFold(filepath.Ext(p), ".ifo") {
+	if strings.EqualFold(filepath.Ext(p), ".ifo") || isBGL(p) {
 		return p, nil
 	}
 	if isArchive(p) {

@@ -106,7 +106,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
   </svg>
   <div>
     <h1>StarDict2Mac</h1>
-    <p>Turn StarDict dictionaries into dictionaries for macOS Dictionary.app and Look Up.</p>
+    <p>Turn StarDict and Babylon dictionaries into dictionaries for macOS Dictionary.app and Look Up.</p>
   </div>
   <div class="sp"></div>
   <button class="ghost" id="quitBtn" title="Quit StarDict2Mac">Quit</button>
@@ -126,9 +126,9 @@ footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
 </section>
 
 <section class="card" id="srcCard">
-  <h2><span class="n">1</span>StarDict dictionary</h2>
+  <h2><span class="n">1</span>Dictionary file</h2>
   <div class="pick">
-    <button class="primary" id="pickFile">Choose .ifo file or archive…</button>
+    <button class="primary" id="pickFile">Choose .ifo / .bgl file or archive…</button>
     <button id="pickFolder">Choose folder…</button>
     <span class="or">or paste a path below</span>
   </div>
@@ -271,7 +271,7 @@ async function load(path){
     $('iTitle').textContent = r.bookname;
     $('iEntries').textContent = fmtN(r.entries);
     $('iSyn').textContent = r.synonyms ? fmtN(r.synonyms) : '—';
-    $('iType').textContent = [...(r.types||'')].map(t=>TYPE_NAMES[t]||t).join(' + ') || '—';
+    $('iType').textContent = r.format==='bgl' ? 'Babylon glossary' : ([...(r.types||'')].map(t=>TYPE_NAMES[t]||t).join(' + ') || '—');
     $('iLang').textContent = {'zh-Hant':'Traditional Chinese','zh-Hans':'Simplified Chinese','ja':'Japanese','ko':'Korean'}[r.lang] || 'Latin / other';
     $('iPath').textContent = r.ifo;
     const d = r.defaults;
@@ -283,7 +283,7 @@ async function load(path){
     $('pvChips').innerHTML = (r.samples||[]).map(w=>`<span class="chip">${esc(w)}</span>`).join('');
     updateDest();
     preview('');
-  }catch(e){ banner($('srcMsg'),'err',esc(e.message)); }
+  }catch(e){ if(e.message!=='superseded') banner($('srcMsg'),'err',esc(e.message)); }
 }
 
 // ---------------------------------------------------------------- options

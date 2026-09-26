@@ -1,11 +1,3 @@
-Third-party notices
-===================
-
-StarDict2Mac is built with the Go programming language and includes code from
-the Go standard library, golang.org/x/net/html (vendored in internal/html) and
-golang.org/x/text encodings (vendored in internal/xtext). All are distributed
-under the following license:
-
 Copyright 2009 The Go Authors.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,13 +25,3 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-Not included: Apple's Dictionary Development Kit
-------------------------------------------------
-StarDict2Mac runs Apple's Dictionary Development Kit for the final build step,
-but the kit is not part of StarDict2Mac, because Apple's terms don't allow
-redistributing it. The app uses a copy the user installed from Apple's
-"Additional Tools for Xcode", or, on request, downloads the kit's files from
-https://github.com/nanoskript/dictionary-development-kit (a copy of the kit in
-Additional Tools for Xcode 14.1) and checks each file's SHA-256 fingerprint.
-The Dictionary Development Kit is © Apple Inc. and subject to Apple's terms.

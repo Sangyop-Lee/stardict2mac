@@ -107,7 +107,7 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	info, err := ParseIfo(ifo)
+	info, err := ReadInfo(ifo)
 	if err != nil {
 		fatal(err)
 	}

@@ -81,6 +81,13 @@ func NewConverter(sd *StarDict, opts Options) *Converter {
 				c.lookup[s.Word] = int(s.Index)
 			}
 		}
+		c.lookupFold = make(map[string]int, len(c.lookup))
+		for w, i := range c.lookup {
+			lw := strings.ToLower(w)
+			if j, ok := c.lookupFold[lw]; !ok || i < j {
+				c.lookupFold[lw] = i
+			}
+		}
 	}
 	return c
 }
@@ -312,7 +319,12 @@ func (c *Converter) frontMatter(sd *StarDict) string {
 	if len(sd.Syns) > 0 {
 		row("Synonyms", fmt.Sprintf("%d", len(sd.Syns)))
 	}
-	row("StarDict version", info.Version)
+	row("Copyright / license", info.Copyright)
+	if info.Format == "bgl" {
+		row("Format", "Babylon glossary (.bgl)")
+	} else {
+		row("StarDict version", info.Version)
+	}
 	row("Source", filepath.Base(info.Path))
 	row("Converted", time.Now().Format("2006-01-02")+" with StarDict2Mac")
 	b.WriteString(`</table></div></d:entry>` + "\n")
@@ -420,7 +432,10 @@ func plistEsc(s string) string {
 }
 
 func BuildPlist(info IfoInfo, opts Options) string {
-	copyright := info.Author
+	copyright := info.Copyright
+	if copyright == "" {
+		copyright = info.Author
+	}
 	if copyright == "" {
 		copyright = info.BookName
 	}

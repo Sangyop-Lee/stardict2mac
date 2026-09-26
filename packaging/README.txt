@@ -2,7 +2,7 @@ StarDict2Mac
 ============
 
 Converts StarDict dictionaries (.ifo + .idx + .dict/.dict.dz, optionally .syn)
-into dictionaries for macOS Dictionary.app, Look Up (Force Click / three-finger
+and Babylon glossaries (.bgl) into dictionaries for macOS Dictionary.app, Look Up (Force Click / three-finger
 tap) and ⌃⌘D. Apple Silicon and Intel Macs, macOS 11 or later.
 No Xcode, Python or Homebrew needed.
 
@@ -32,8 +32,8 @@ once, separately. The first time you convert a dictionary, choose one of:
 
 Use
 ---
-1. Choose the .ifo file, the folder containing it, or a .tar.gz / .tar.bz2 /
-   .zip archive of a StarDict dictionary.
+1. Choose a StarDict .ifo file, a Babylon .bgl file, the folder containing
+   one, or a .tar.gz / .tar.bz2 / .zip archive of a dictionary.
 2. Check the name, font and options; look at the preview.
 3. Click Convert. When done, click "Open Dictionary", then in
    Dictionary → Settings… tick the new dictionary.
@@ -44,8 +44,10 @@ notification when it's finished. To remove a dictionary, delete it from
 
 Supported content
 -----------------
-Plain text, Pango markup, HTML, XDXF, phonetic fields and images in a res/
-folder. Sound files are skipped. Cross-references become clickable links, and
+StarDict: plain text, Pango markup, HTML, XDXF, phonetic fields and images in a
+res/ folder. Babylon: definitions, alternate spellings, embedded images, and
+legacy encodings (Big5, GBK, Shift-JIS, EUC-KR, Windows code pages). Sound files
+are skipped. Cross-references become clickable links, and
 synonyms (.syn) become searchable. Chinese, Japanese and Korean dictionaries
 get the matching system serif font automatically.
 
